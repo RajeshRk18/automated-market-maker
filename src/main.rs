@@ -1,5 +1,3 @@
-use core::f32;
-
 struct LiquidityPool {
     token0: f32,
     token1: f32,
@@ -84,6 +82,7 @@ impl LiquidityPool {
     }
 }
 
+
 #[derive(Debug)]
 enum ExchangeError {
     NotEqualError(String),
@@ -91,7 +90,7 @@ enum ExchangeError {
 }
 
 impl std::fmt::Display for ExchangeError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::NotEqualError(s) => {
                 write!(f, "{}", s)
@@ -104,11 +103,14 @@ impl std::fmt::Display for ExchangeError {
 }
 
 impl std::error::Error for ExchangeError {}
-
 fn main() -> Result<(), ExchangeError> {
     let mut eth_dai_pool = LiquidityPool::new(10.0, 1000.0);
-    eth_dai_pool.deposit(100.0, 10000.0)?;
-
+    let deposit = eth_dai_pool.deposit(100.0, 10000.0)?;
+    /*match deposit {
+        Ok(s) => println!("{:?}", s),
+        Err(ExchangeError::NotEqualError(e)) => println!("{:?}", e),
+        Err(ExchangeError::InadequateDepositError(e)) => println!("{:?}", e)
+    }*/
     assert_eq!(eth_dai_pool.exchange_a(20.0), 0.009981851);
     Ok(())
 }
