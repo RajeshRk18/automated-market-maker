@@ -1,4 +1,3 @@
-
 use float_eq::float_eq;
 use std::f32::EPSILON;
 #[derive(Debug)]
@@ -136,4 +135,3 @@ fn main() -> Result<(), ExchangeError> {
     println!("Received ETH: {:?}\nCurrent ETH Price: {:?}", eth_dai_pool.exchange_a(100.0), eth_dai_pool.get_price_of_a());
     Ok(())
 }
-

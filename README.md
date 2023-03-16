@@ -20,8 +20,15 @@ cargo run
 
 ---
 
+### TODO 
+- Fee mechanism
+- Slippage
+- LP Tokens
+- CLI Utility & Frontend (maybe..)
+
+---
 ### Resources
 
 [UniswapV3 whitepaper](https://uniswap.org/whitepaper-v3.pdf)
 
-[Hayden Adams explanation of UniswapV1](https://uniswap.org/whitepaper-v3.pdf)
+[Good explanation of AMM](https://dev.to/learnweb3/how-do-dexs-work-understand-uniswap-v1-by-deep-diving-into-the-math-and-code-learn-the-xyk-amm-curve-46hb)
