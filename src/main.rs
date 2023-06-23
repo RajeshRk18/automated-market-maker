@@ -1,5 +1,9 @@
+mod pool_trait;
 use float_eq::float_eq;
 use std::f32::EPSILON;
+use thiserror::Error;
+use pool_trait::Pool;
+
 #[derive(Debug)]
 struct LiquidityPool {
     token0: f32,
@@ -20,52 +24,6 @@ impl LiquidityPool {
         }
     }
 
-    fn deposit(&mut self, token0: f32, token1: f32) -> Result<(f32, f32), ExchangeError> {
-        let deposit_a = token0;
-        let deposit_b = token1 * self.get_price_of_b();
-
-        // Using absolute comparison to compare two floating values
-        if !float_eq!(deposit_a, deposit_b, abs <= 0.25 * EPSILON) {
-            let err_msg = format!(
-                "Deposit should be in the ratio of {} : {}",
-                self.ratio * 100.0,
-                100
-            );
-            Err(ExchangeError::NotEqualError(err_msg))
-        } else {
-            self.token0 += token0;
-            self.token1 += token1;
-            self.product = self.token0 * self.token1;
-            self.update_price();
-            Ok((deposit_a, deposit_b))
-        }
-    }
-
-    fn withdraw(&mut self, token0: f32, token1: f32) -> Result<(), ExchangeError> {
-        let withdraw_a = token0;
-        let withdraw_b = token1 * self.get_price_of_b();
-
-        if !float_eq!(withdraw_a, withdraw_b, abs <= 0.25 * EPSILON) {
-            let err_msg = format!(
-                "Deposit should be in the ratio of {} : {}!",
-                self.ratio * 100.0,
-                100
-            );
-            Err(ExchangeError::NotEqualError(err_msg))
-        } else if withdraw_a > self.token0 || withdraw_b > self.token1 {
-            Err(ExchangeError::InadequateDepositError(
-                "Your withdrawal exceeds the deposit in pool!".to_string(),
-            ))
-        } else {
-            self.token0 -= token0;
-            self.token1 -= token1;
-            self.product = self.token0 * self.token1;
-            self.update_price();
-
-            Ok(())
-        }
-    }
-
     fn update_price(&mut self) -> (f32, f32) {
         let price_of_a = self.token1 / self.token0;
         let price_of_b = self.token0 / self.token1;
@@ -81,6 +39,43 @@ impl LiquidityPool {
         let price = self.update_price();
         price.1
     }
+}
+
+impl Pool for LiquidityPool{
+    fn deposit(&mut self, token0: f32, token1: f32) -> Result<(f32, f32), ExchangeError> {
+        let deposit_a = token0;
+        let deposit_b = token1 * self.get_price_of_b();
+
+        // Using absolute comparison to compare two floating values
+        if !float_eq!(deposit_a, deposit_b, abs <= 0.25 * EPSILON) {
+            Err(ExchangeError::NotEqualError(self.ratio * 100.0, 100))
+        } else {
+            self.token0 += token0;
+            self.token1 += token1;
+            self.product = self.token0 * self.token1;
+            self.update_price();
+            Ok((deposit_a, deposit_b))
+        }
+    }
+
+    fn withdraw(&mut self, token0: f32, token1: f32) -> Result<(), ExchangeError> {
+        let withdraw_a = token0;
+        let withdraw_b = token1 * self.get_price_of_b();
+
+        if !float_eq!(withdraw_a, withdraw_b, abs <= 0.25 * EPSILON) {
+            Err(ExchangeError::NotEqualError(self.ratio * 100.0, 100))
+        } else if withdraw_a > self.token0 || withdraw_b > self.token1 {
+            Err(ExchangeError::InadequateDepositError)
+        } else {
+            self.token0 -= token0;
+            self.token1 -= token1;
+            self.product = self.token0 * self.token1;
+            self.update_price();
+
+            Ok(())
+        }
+    }
+
 
     fn exchange_a(&mut self, token1: f32) -> f32 {
         let token1_bef_exch = self.token1;
@@ -103,26 +98,16 @@ impl LiquidityPool {
     }
 }
 
-#[derive(Debug)]
-enum ExchangeError {
-    NotEqualError(String),
-    InadequateDepositError(String),
+#[derive(Debug, Error)]
+pub enum ExchangeError {
+
+    #[error("Deposits should be in the ratio of {0}:{1}!")]
+    NotEqualError(f32, u32),
+
+    #[error("Your withdrawal exceeds the deposit in pool!")]
+    InadequateDepositError,
 }
 
-impl std::fmt::Display for ExchangeError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::NotEqualError(s) => {
-                write!(f, "{}", s)
-            }
-            Self::InadequateDepositError(s) => {
-                write!(f, "{}", s)
-            }
-        }
-    }
-}
-
-impl std::error::Error for ExchangeError {}
 
 fn main() -> Result<(), ExchangeError> {
     let mut eth_dai_pool = LiquidityPool::new(100.0, 1000.0);
